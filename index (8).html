@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<title>Zangetsu Edits</title>
+	<link rel="icon" type="image/png" href="images/favicon.png">
+
+	<!-- Google Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+	<!-- Font Awesome -->
+	<link rel="stylesheet" href="assets/css/fontawesome-all.min.css">
+
+	<!-- Three.js -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+	<!-- GSAP + ScrollTrigger -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+	<!-- Lenis Smooth Scroll -->
+	<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+	<style>
+		/* ========================================
+		   DESIGN TOKENS & RESET
+		   ======================================== */
+		:root {
+			--c-canvas:   #0a0806;
+			--c-surface:  #16110e;
+			--c-ink:      #f5ebdd;
+			--c-ink-soft: #a2968a;
+			--c-accent:   #ff5a3d;
+			--c-accent-ink:#15110f;
+			--font-display:'Syne', system-ui, sans-serif;
+			--font-text:  'Inter', system-ui, sans-serif;
+		}
+
+		html { box-sizing: border-box; }
+		*, *:before, *:after { box-sizing: inherit; }
+
+		html, body {
+			margin: 0; padding: 0;
+			background: var(--c-canvas);
+			color: var(--c-ink);
+			font-family: var(--font-text);
+			font-size: 1rem;
+			line-height: 1.65;
+			overflow-x: hidden;
+		}
+
+		body.is-preload *,
+		body.is-preload *:before,
+		body.is-preload *:after {
+			animation: none !important;
+			transition: none !important;
+		}
+
+		img { display: block; max-width: 100%; height: auto; }
+
+		a {
+			color: var(--c-ink);
+			text-decoration: none;
+			border-bottom: dotted 1px rgba(245,235,221,0.35);
+			transition: color .2s ease, border-color .2s ease;
+		}
+		a:hover { border-bottom-color: transparent; color: var(--c-accent); }
+
+		h1, h2, h3, h4, h5, h6 {
+			color: var(--c-ink);
+			font-family: var(--font-display);
+			font-weight: 700;
+			line-height: 1.25;
+			margin: 0 0 1rem 0;
+			letter-spacing: 0.02em;
+		}
+
+		p { margin: 0 0 1.5rem 0; }
+		ul { list-style: none; margin: 0; padding: 0; }
+
+		:focus-visible {
+			outline: 2px solid var(--c-accent);
+			outline-offset: 2px;
+		}
+
+		sr-only {
+			position: absolute; width: 1px; height: 1px;
+			padding: 0; margin: -1px; overflow: hidden;
+			clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+		}
+
+		/* ========================================
+		   THREE.JS CANVAS (HERO BG)
+		   ======================================== */
+		#three-canvas {
+			position: fixed; inset: 0;
+			z-index: 0;
+			width: 100%; height: 100vh;
+			pointer-events: none;
+		}
+
+		/* Fallback when WebGL unavailable */
+		noembed #three-canvas,
+		.noscript #three-canvas { display: none; }
+		#bg-fallback {
+			display: none;
+			position: fixed; inset: 0; z-index: 0;
+			background: url('images/bg.jpg') center center / cover no-repeat;
+		}
+		#bg-fallback::before {
+			content: '';
+			position: absolute; inset: 0;
+			background: linear-gradient(to top, rgba(10,8,6,.85), rgba(10,8,6,.55)),
+						url('images/overlay.png');
+			background-size: auto, 256px 256px;
+			background-position: center, center;
+			background-repeat: repeat;
+		}
+
+		/* ========================================
+		   WRAPPER
+		   ======================================== */
+		#wrapper {
+			position: relative;
+			z-index: 2;
+			min-height: 100vh;
+		}
+
+		/* ========================================
+		   HEADER / NAV
+		   ======================================== */
+		#header {
+			position: fixed;
+			top: 0; left: 0; right: 0;
+			z-index: 100;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 1rem 3rem;
+			background: linear-gradient(to bottom, rgba(10,8,6,.85) 60%, transparent);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			transition: background .4s ease, padding .3s ease;
+		}
+
+		#header.scrolled {
+			background: rgba(10,8,6,.95);
+			padding: .75rem 3rem;
+			box-shadow: 0 1px 0 rgba(245,235,221,.08);
+		}
+
+		.header-logo {
+			display: flex; align-items: center; gap: .75rem;
+		}
+		.logo-icon {
+			width: 40px; height: 40px;
+			border: 1.5px solid var(--c-ink);
+			border-radius: 50%;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 1.2rem;
+			flex-shrink: 0;
+		}
+		.logo-text {
+			font-family: var(--font-display);
+			font-weight: 800;
+			font-size: 1.15rem;
+			letter-spacing: .08em;
+			text-transform: uppercase;
+			color: var(--c-ink);
+		}
+
+		#header nav ul {
+			display: flex; gap: .25rem;
+		}
+		#header nav ul li a {
+			display: block;
+			padding: .5rem 1rem;
+			font-family: var(--font-display);
+			font-weight: 600;
+			font-size: .78rem;
+			letter-spacing: .14em;
+			text-transform: uppercase;
+			color: var(--c-ink-soft);
+			border: none;
+			border-radius: 4px;
+			transition: color .2s ease, background .2s ease;
+		}
+		#header nav ul li a:hover,
+		#header nav ul li a.active {
+			color: var(--c-ink);
+			background: rgba(245,235,221,.08);
+		}
+
+		/* Mobile hamburger */
+		.nav-toggle {
+			display: none;
+			background: none; border: none; cursor: pointer;
+			padding: .5rem; color: var(--c-ink);
+			font-size: 1.5rem;
+		}
+		.nav-toggle span {
+			display: block; width: 22px; height: 2px;
+			background: var(--c-ink);
+			margin: 5px 0; transition: transform .3s ease;
+		}
+
+		@media (max-width: 768px) {
+			#header { padding: .875rem 1.25rem; }
+			#header.scrolled { padding: .625rem 1.25rem; }
+			.nav-toggle { display: block; }
+			#header nav {
+				position: fixed; top: 0; right: 0;
+				width: min(300px, 85vw); height: 100vh;
+				background: rgba(10,8,6,.97);
+				backdrop-filter: blur(16px);
+				-webkit-backdrop-filter: blur(16px);
+				padding: 5rem 2rem 2rem;
+				transform: translateX(100%);
+				transition: transform .35s cubic-bezier(.4,0,.2,1);
+			}
+			#header nav.open { transform: translateX(0); }
+			#header nav ul { flex-direction: column; gap: .25rem; }
+			#header nav ul li a { padding: .875rem 1rem; font-size: .9rem; }
+		}
+
+		/* ========================================
+		   HERO SECTION
+	  	======================================== */
+		.hero {
+			position: relative;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			padding: 2rem;
+			overflow: hidden;
+		}
+
+		.hero-content {
+			position: relative;
+			z-index: 2;
+			max-width: 860px;
+		}
+
+		.hero-overline {
+			display: inline-block;
+			font-family: var(--font-text);
+			font-size: .75rem;
+			font-weight: 500;
+			letter-spacing: .25em;
+			text-transform: uppercase;
+			color: var(--c-accent);
+			margin-bottom: 1.25rem;
+			opacity: 0;
+			transform: translateY(20px);
+		}
+
+		.hero-title {
+			font-family: var(--font-display);
+			font-size: clamp(3rem, 8vw, 6.5rem);
+			font-weight: 800;
+			line-height: .95;
+			letter-spacing: -.02em;
+			color: var(--c-ink);
+			margin-bottom: 1.5rem;
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		.hero-title .accent { color: var(--c-accent); }
+
+		.hero-tagline {
+			font-size: clamp(1rem, 2vw, 1.25rem);
+			font-weight: 300;
+			color: var(--c-ink-soft);
+			line-height: 1.7;
+			max-width: 620px;
+			margin: 0 auto 2.5rem;
+			opacity: 0;
+			transform: translateY(20px);
+		}
+
+		.hero-cta {
+			display: flex;
+			gap: 1rem;
+			justify-content: center;
+			flex-wrap: wrap;
+			opacity: 0;
+			transform: translateY(20px);
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			gap: .5rem;
+			padding: .875rem 2rem;
+			font-family: var(--font-display);
+			font-weight: 600;
+			font-size: .85rem;
+			letter-spacing: .1em;
+			text-transform: uppercase;
+			border-radius: 4px;
+			cursor: pointer;
+			border: none;
+			transition: transform .25s ease, box-shadow .25s ease, background .2s ease;
+		}
+		.btn-primary {
+			background: var(--c-accent);
+			color: var(--c-accent-ink);
+		}
+		.btn-primary:hover {
+			background: #ff7055;
+			color: var(--c-accent-ink);
+			transform: translateY(-2px);
+			box-shadow: 0 8px 30px rgba(255,90,61,.3);
+		}
+		.btn-outline {
+			background: transparent;
+			color: var(--c-ink);
+			border: 1.5px solid rgba(245,235,221,.3);
+		}
+		.btn-outline:hover {
+			border-color: var(--c-ink);
+			background: rgba(245,235,221,.06);
+			color: var(--c-ink);
+			transform: translateY(-2px);
+		}
+
+		.scroll-hint {
+			position: absolute;
+			bottom: 2.5rem;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: .5rem;
+			color: var(--c-ink-soft);
+			font-size: .7rem;
+			letter-spacing: .2em;
+			text-transform: uppercase;
+			opacity: .6;
+			animation: scrollBounce 2s ease-in-out infinite;
+		}
+		.scroll-hint::after {
+			content: '';
+			width: 1px; height: 40px;
+			background: linear-gradient(to bottom, var(--c-ink-soft), transparent);
+		}
+		@keyframes scrollBounce {
+			0%,100% { transform: translateX(-50%) translateY(0); }
+			50% { transform: translateX(-50%) translateY(6px); }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hero-content > * { opacity: 1; transform: none !important; }
+			.scroll-hint { animation: none; }
+		}
+
+		/* ========================================
+		   SECTIONS BASE
+		   ======================================== */
+		.section {
+			padding: 6rem 2rem;
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+		.section-label {
+			display: inline-block;
+			font-family: var(--font-text);
+			font-size: .7rem;
+			font-weight: 500;
+			letter-spacing: .25em;
+			text-transform: uppercase;
+			color: var(--c-accent);
+			margin-bottom: .75rem;
+		}
+		.section-title {
+			font-family: var(--font-display);
+			font-size: clamp(2rem, 4vw, 3.25rem);
+			font-weight: 700;
+			line-height: 1.1;
+			letter-spacing: -.01em;
+			color: var(--c-ink);
+			margin-bottom: 1.25rem;
+		}
+		.section-text {
+			font-size: 1.05rem;
+			color: var(--c-ink-soft);
+			line-height: 1.75;
+			max-width: 680px;
+		}
+
+		.reveal {
+			opacity: 0;
+			transform: translateY(40px);
+			transition: opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1);
+		}
+		.reveal.visible {
+			opacity: 1;
+			transform: translateY(0);
+		}
+
+		/* ========================================
+		   INTRO SECTION (PARALLAX IMAGE)
+		   ======================================== */
+		.intro-section {
+			position: relative;
+			overflow: hidden;
+		}
+		.intro-inner {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 4rem;
+			align-items: center;
+		}
+		.intro-image-wrap {
+			position: relative;
+			border-radius: 8px;
+			overflow: hidden;
+			aspect-ratio: 16/9;
+			will-change: transform;
+		}
+		.intro-image-wrap img {
+			width: 100%; height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		.intro-image-wrap::after {
+			content: '';
+			position: absolute; inset: 0;
+			background: linear-gradient(to top, rgba(10,8,6,.4), transparent 50%);
+			pointer-events: none;
+		}
+		.intro-text h2 {
+			font-size: clamp(1.75rem, 3vw, 2.5rem);
+			margin-bottom: 1rem;
+		}
+		.intro-text p {
+			color: var(--c-ink-soft);
+			font-size: 1.05rem;
+			line-height: 1.75;
+		}
+
+		@media (max-width: 768px) {
+			.intro-inner { grid-template-columns: 1fr; gap: 2rem; }
+			.intro-image-wrap { aspect-ratio: 4/3; }
+		}
+
+		/* ========================================
+		   WORK SECTION
+		   ======================================== */
+		.work-section { position: relative; }
+		.work-inner {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 4rem;
+			align-items: center;
+		}
+		.work-text h2 {
+			font-size: clamp(1.75rem, 3vw, 2.5rem);
+			margin-bottom: 1rem;
+		}
+		.work-text p {
+			color: var(--c-ink-soft);
+			font-size: 1.05rem;
+			line-height: 1.75;
+		}
+		.work-image-wrap {
+			position: relative;
+			border-radius: 8px;
+			overflow: hidden;
+			aspect-ratio: 16/9;
+		}
+		.work-image-wrap img {
+			width: 100%; height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		.work-image-wrap::before {
+			content: '';
+			position: absolute; inset: 0;
+			background: url('images/overlay.png');
+			background-size: 256px 256px;
+			background-repeat: repeat;
+			opacity: .4;
+			pointer-events: none;
+		}
+
+		@media (max-width: 768px) {
+			.work-inner { grid-template-columns: 1fr; gap: 2rem; }
+		}
+
+		/* ========================================
+		   ABOUT SECTION (PARALLAX BG)
+		   ======================================== */
+		.about-section {
+			position: relative;
+			overflow: hidden;
+			padding: 8rem 2rem;
+		}
+		.about-bg {
+			position: absolute; inset: 0;
+			z-index: 0;
+		}
+		.about-bg-img {
+			width: 110%; height: 120%;
+			position: absolute; inset: -10% 0 -10%;
+			object-fit: cover;
+			filter: brightness(.35) saturate(.8);
+			will-change: transform;
+		}
+		.about-bg-overlay {
+			position: absolute; inset: 0;
+			background: linear-gradient(to bottom, var(--c-canvas) 0%, transparent 15%, transparent 85%, var(--c-canvas) 100%);
+		}
+		.about-inner {
+			position: relative;
+			z-index: 1;
+			max-width: 800px;
+			margin: 0 auto;
+			text-align: center;
+		}
+		.about-inner h2 {
+			font-size: clamp(1.75rem, 3vw, 2.5rem);
+			margin-bottom: 1.25rem;
+		}
+		.about-inner p {
+			color: var(--c-ink-soft);
+			font-size: 1.05rem;
+			line-height: 1.8;
+		}
+
+		/* ========================================
+		   EDITS SHOWCASE (3D TILT CARDS)
+		   ======================================== */
+		.edits-section { position: relative; padding: 6rem 0; }
+		.edits-header {
+			text-align: center;
+			padding: 0 2rem;
+			margin-bottom: 3rem;
+		}
+		.edits-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 1.5rem;
+			padding: 0 2rem;
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+
+		.edit-card {
+			position: relative;
+			perspective: 1000px;
+			transform-style: preserve-3d;
+			border-radius: 8px;
+			overflow: hidden;
+			opacity: 0;
+			transform: translateY(60px) rotateX(8deg);
+			transition: opacity .6s ease, transform .6s cubic-bezier(.4,0,.2,1);
+		}
+		.edit-card.visible {
+			opacity: 1;
+			transform: translateY(0) rotateX(0);
+		}
+		.edit-card-inner {
+			position: relative;
+			background: var(--c-surface);
+			border: 1px solid rgba(245,235,221,.08);
+			border-radius: 8px;
+			overflow: hidden;
+			transition: border-color .3s ease, box-shadow .3s ease;
+			transform-style: preserve-3d;
+			will-change: transform;
+		}
+		.edit-card-inner:hover {
+			border-color: rgba(245,235,221,.18);
+			box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 30px rgba(255,90,61,.08);
+		}
+		.edit-video-wrap {
+			position: relative;
+			aspect-ratio: 16/9;
+			overflow: hidden;
+			background: #000;
+		}
+		.edit-video-wrap.square { aspect-ratio: 1 / 1; }
+		.edit-video-wrap.square video { object-fit: contain; background: #000; }
+		.edit-video-wrap video {
+			width: 100%; height: 100%;
+			object-fit: cover;
+			display: block;
+			transition: transform .4s ease, filter .3s ease;
+		}
+		.edit-card:hover .edit-video-wrap video {
+			transform: scale(1.04);
+			filter: brightness(1.05);
+		}
+		.edit-play-overlay {
+			pointer-events: none;
+			position: absolute; inset: 0;
+			display: flex; align-items: center; justify-content: center;
+			background: rgba(10,8,6,.3);
+			opacity: 0;
+			transition: opacity .3s ease;
+			cursor: pointer;
+		}
+		.edit-card:hover .edit-play-overlay { opacity: 1; }
+		.play-icon {
+			width: 56px; height: 56px;
+			border-radius: 50%;
+			background: var(--c-accent);
+			display: flex; align-items: center; justify-content: center;
+			color: var(--c-accent-ink);
+			font-size: 1.25rem;
+			transition: transform .2s ease;
+		}
+		.edit-card:hover .play-icon { transform: scale(1.1); }
+		.edit-card-info {
+			padding: 1rem 1.25rem;
+		}
+		.edit-card-info h3 {
+			font-size: .9rem;
+			font-weight: 600;
+			letter-spacing: .05em;
+			margin-bottom: .25rem;
+		}
+		.edit-card-info span {
+			font-size: .8rem;
+			color: var(--c-ink-soft);
+		}
+
+		@media (max-width: 980px) {
+			.edits-grid { grid-template-columns: repeat(2, 1fr); }
+		}
+		@media (max-width: 736px) {
+			.edits-grid { grid-template-columns: 1fr; gap: 1.25rem; padding: 0 1rem; }
+			.edits-section { padding: 4rem 0; }
+		}
+
+		/* ========================================
+		   PRICING (3D FLIP CARDS)
+		   ======================================== */
+		.pricing-section { position: relative; padding: 6rem 2rem; }
+		.pricing-inner {
+			max-width: 1100px;
+			margin: 0 auto;
+			text-align: center;
+		}
+		.pricing-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 1.5rem;
+			margin-top: 2.5rem;
+			perspective: 1200px;
+		}
+
+		.pricing-card {
+			position: relative;
+			background: var(--c-surface);
+			border: 1px solid rgba(245,235,221,.1);
+			border-radius: 12px;
+			padding: 2.5rem 1.75rem;
+			text-align: left;
+			transform-style: preserve-3d;
+			transition: transform .35s cubic-bezier(.4,0,.2,1), border-color .3s ease, box-shadow .3s ease, opacity .6s ease;
+			opacity: 0;
+			transform: translateY(50px) rotateY(-5deg);
+			overflow: hidden;
+		}
+		.pricing-card.visible {
+			opacity: 1;
+			transform: translateY(0) rotateY(0);
+		}
+		.pricing-card::before {
+			content: '';
+			position: absolute; inset: 0;
+			border-radius: inherit;
+			background: radial-gradient(ellipse at 30% 0%, rgba(255,90,61,.06) 0%, transparent 60%);
+			pointer-events: none;
+		}
+		.pricing-card:hover {
+			border-color: rgba(245,235,221,.2);
+			box-shadow: 0 24px 60px rgba(0,0,0,.4), 0 0 40px rgba(255,90,61,.06);
+			transform: translateY(-8px) scale(1.02);
+		}
+
+		.pricing-card.featured {
+			border-color: rgba(255,90,61,.4);
+			background: linear-gradient(165deg, rgba(255,90,61,.08) 0%, var(--c-surface) 50%);
+			transform: translateY(0) rotateY(0) scale(1.03);
+			opacity: 1;
+			z-index: 1;
+		}
+		.pricing-card.featured.visible {
+			transform: translateY(-12px) scale(1.04);
+		}
+		.pricing-card.featured:hover {
+			border-color: rgba(255,90,61,.7);
+			box-shadow: 0 24px 60px rgba(255,90,61,.15), 0 0 50px rgba(255,90,61,.08);
+			transform: translateY(-16px) scale(1.05);
+		}
+		.featured-badge {
+			position: absolute;
+			top: 0; right: 1.5rem;
+			background: var(--c-accent);
+			color: var(--c-accent-ink);
+			font-size: .7rem;
+			font-weight: 700;
+			letter-spacing: .12em;
+			text-transform: uppercase;
+			padding: .375rem .75rem;
+			border-radius: 0 0 6px 6px;
+		}
+
+		.plan-name {
+			font-family: var(--font-display);
+			font-size: 1.25rem;
+			font-weight: 700;
+			letter-spacing: .08em;
+			text-transform: uppercase;
+			color: var(--c-ink);
+			margin-bottom: .5rem;
+		}
+		.plan-price {
+			font-family: var(--font-display);
+			font-size: 2.75rem;
+			font-weight: 800;
+			color: var(--c-ink);
+			margin: .75rem 0;
+			line-height: 1;
+		}
+		.plan-price span {
+			font-size: 1rem;
+			font-weight: 400;
+			color: var(--c-ink-soft);
+		}
+		.plan-description {
+			font-size: .9rem;
+			color: var(--c-ink-soft);
+			line-height: 1.5;
+			margin-bottom: 1.75rem;
+		}
+		.plan-features {
+			list-style: none;
+			padding: 0;
+			margin: 0 0 2rem 0;
+			text-align: left;
+			border-top: 1px solid rgba(245,235,221,.08);
+			padding-top: 1.25rem;
+		}
+		.plan-features li {
+			padding: .5rem 0;
+			font-size: .9rem;
+			color: var(--c-ink-soft);
+			display: flex;
+			align-items: center;
+			gap: .625rem;
+			border-bottom: 1px solid rgba(245,235,221,.04);
+		}
+		.plan-features li:last-child { border-bottom: none; }
+		.plan-features li::before {
+			content: '\2713';
+			display: inline-block;
+			width: 18px; height: 18px;
+			background: rgba(255,90,61,.15);
+			color: var(--c-accent);
+			border-radius: 50%;
+			font-size: .65rem;
+			line-height: 18px;
+			text-align: center;
+			flex-shrink: 0;
+		}
+		.pricing-card .actions { margin-top: 0; }
+		.pricing-card .button.primary.fit {
+			width: 100%;
+			display: block;
+			text-align: center;
+		}
+
+		@media (max-width: 980px) {
+			.pricing-grid { grid-template-columns: repeat(2, 1fr); }
+			.pricing-card.featured { transform: translateY(-6px) scale(1.02); }
+		}
+		@media (max-width: 736px) {
+			.pricing-section { padding: 4rem 1rem; }
+			.pricing-grid { grid-template-columns: 1fr; gap: 1.5rem; max-width: 420px; margin-left: auto; margin-right: auto; }
+			.pricing-card.featured { transform: translateY(0) scale(1); }
+			.pricing-card.featured.visible { transform: translateY(-8px) scale(1.02); }
+		}
+
+		/* ========================================
+		   CONTACT SECTION
+		   ======================================== */
+		.contact-section {
+			position: relative;
+			padding: 6rem 2rem;
+		}
+		.contact-inner {
+			max-width: 700px;
+			margin: 0 auto;
+		}
+		.contact-inner h2 {
+			font-size: clamp(1.75rem, 3vw, 2.5rem);
+			margin-bottom: .75rem;
+		}
+		.contact-inner > p {
+			color: var(--c-ink-soft);
+			margin-bottom: 2.5rem;
+		}
+
+		form.contact-form .fields {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 1.25rem;
+			margin-bottom: 1.25rem;
+		}
+		form.contact-form .field.full { grid-column: 1 / -1; }
+		form.contact-form label {
+			display: block;
+			font-size: .78rem;
+			font-weight: 500;
+			letter-spacing: .1em;
+			text-transform: uppercase;
+			color: var(--c-ink-soft);
+			margin-bottom: .5rem;
+		}
+		form.contact-form input[type="text"],
+		form.contact-form input[type="email"],
+		form.contact-form textarea {
+			width: 100%;
+			background: var(--c-surface);
+			border: 1px solid rgba(245,235,221,.15);
+			border-radius: 6px;
+			color: var(--c-ink);
+			font-family: var(--font-text);
+			font-size: .95rem;
+			padding: .875rem 1rem;
+			outline: 0;
+			transition: border-color .2s ease, box-shadow .2s ease;
+		}
+		form.contact-form input:focus,
+		form.contact-form textarea:focus {
+			border-color: var(--c-accent);
+			box-shadow: 0 0 0 3px rgba(255,90,61,.15);
+		}
+		form.contact-form textarea { resize: vertical; min-height: 120px; }
+
+		form.contact-form .submit-row {
+			display: flex;
+			gap: 1rem;
+			margin-top: .5rem;
+		}
+		form.contact-form button[type="submit"],
+		form.contact-form input[type="submit"] {
+			all: unset;
+			cursor: pointer;
+		}
+		form.contact-form button[type="submit"].primary-submit {
+			background: var(--c-accent);
+			color: var(--c-accent-ink);
+			font-family: var(--font-display);
+			font-weight: 600;
+			font-size: .85rem;
+			letter-spacing: .1em;
+			text-transform: uppercase;
+			padding: .875rem 2rem;
+			border-radius: 4px;
+			border: none;
+			transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+		}
+		form.contact-form button[type="submit"].primary-submit:hover {
+			background: #ff7055;
+			transform: translateY(-2px);
+			box-shadow: 0 8px 30px rgba(255,90,61,.25);
+		}
+		form.contact-form input[type="reset"] {
+			background: transparent;
+			color: var(--c-ink-soft);
+			font-family: var(--font-text);
+			font-size: .85rem;
+			padding: .875rem 1.5rem;
+			border: 1px solid rgba(245,235,221,.15);
+			border-radius: 4px;
+			cursor: pointer;
+			transition: border-color .2s ease, color .2s ease;
+		}
+		form.contact-form input[type="reset"]:hover {
+			border-color: var(--c-ink-soft);
+			color: var(--c-ink);
+		}
+
+		.contact-social {
+			margin-top: 2.5rem;
+			padding-top: 2rem;
+			border-top: 1px solid rgba(245,235,221,.08);
+			display: flex;
+			align-items: center;
+			gap: 1rem;
+			flex-wrap: wrap;
+		}
+		.contact-social span.label {
+			font-size: .8rem;
+			color: var(--c-ink-soft);
+			letter-spacing: .1em;
+			text-transform: uppercase;
+		}
+		.contact-social ul.icons li a::before { color: #ffffff; }
+		.contact-social ul.icons {
+			display: flex;
+			gap: .5rem;
+			list-style: none;
+			margin: 0; padding: 0;
+		}
+		.contact-social ul.icons li a {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 40px; height: 40px;
+			border: 1px solid rgba(245,235,221,.15);
+			border-radius: 50%;
+			color: #ffffff;
+			font-size: 1rem;
+			transition: border-color .2s ease, color .2s ease, background .2s ease;
+		}
+		.contact-social ul.icons li a:hover {
+			border-color: var(--c-accent);
+			color: var(--c-accent);
+			background: rgba(255,90,61,.08);
+		}
+
+		@media (max-width: 736px) {
+			form.contact-form .fields { grid-template-columns: 1fr; }
+			form.contact-form .submit-row { flex-direction: column; }
+			form.contact-form button[type="submit"].primary-submit,
+			form.contact-form input[type="reset"] { width: 100%; text-align: center; }
+		}
+
+		/* ========================================
+		   FOOTER
+		   ======================================== */
+		#footer {
+			text-align: center;
+			padding: 3rem 2rem;
+			border-top: 1px solid rgba(245,235,221,.06);
+		}
+		#footer .copyright {
+			font-size: .8rem;
+			color: var(--c-ink-soft);
+			letter-spacing: .05em;
+		}
+		#footer .copyright a {
+			color: var(--c-accent);
+			border-bottom: none;
+		}
+		#footer .copyright a:hover { opacity: .8; }
+
+		/* ========================================
+		   SECTION DIVIDER ACCENT
+		   ======================================== */
+		.accent-divider {
+			width: 60px; height: 2px;
+			background: var(--c-accent);
+			margin-bottom: 2rem;
+			border-radius: 2px;
+		}
+
+		/* ========================================
+		   REDUCED MOTION
+		   ======================================== */
+		@media (prefers-reduced-motion: reduce) {
+			.edit-card, .pricing-card, .reveal {
+				opacity: 1 !important;
+				transform: none !important;
+				transition: none !important;
+			}
+			.hero-content > * { opacity: 1 !important; transform: none !important; }
+			.intro-image-wrap, .work-image-wrap, .about-bg-img { will-change: auto; }
+		}
+	</style>
+</head>
+
+<body class="is-preload">
+
+	<!-- Three.js Canvas -->
+	<canvas id="three-canvas" aria-hidden="true"></canvas>
+	<noscript><div id="bg-fallback"></div></noscript>
+
+	<div id="wrapper">
+
+		<!-- Header -->
+		<header id="header">
+			<a href="#intro" class="header-logo">
+				<div class="logo-icon" aria-hidden="true">🎥</div>
+				<span class="logo-text">Zangetsu Edits</span>
+			</a>
+			<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+				<span></span><span></span><span></span>
+			</button>
+			<nav aria-label="Main navigation">
+				<ul>
+					<li><a href="#intro">Intro</a></li>
+					<li><a href="#work">Work</a></li>
+					<li><a href="#about">About</a></li>
+					<li><a href="#edits-section">Edits</a></li>
+					<li><a href="#pricing-section">Pricing</a></li>
+					<li><a href="#contact">Contact</a></li>
+				</ul>
+			</nav>
+		</header>
+
+		<!-- Hero -->
+		<section class="hero" id="hero">
+			<div class="hero-content">
+				<span class="hero-overline">Professional Video Editing</span>
+				<h1 class="hero-title">Zangetsu<br><span class="accent">Edits</span></h1>
+				<p class="hero-tagline">Professional video editing services for YouTube, social media, commercials, and cinematic content.</p>
+				<div class="hero-cta">
+					<a href="#edits-section" class="btn btn-primary">View My Work</a>
+					<a href="#contact" class="btn btn-outline">Get In Touch</a>
+				</div>
+			</div>
+			<div class="scroll-hint" aria-hidden="true">Scroll</div>
+		</section>
+
+		<!-- Intro Section -->
+		<section class="section intro-section" id="intro">
+			<div class="intro-inner">
+				<div class="intro-image-wrap reveal">
+					<img src="images/pic01.jpg" alt="Cinematic video editing workspace" loading="lazy" />
+				</div>
+				<div class="intro-text reveal">
+					<span class="section-label">Introduction</span>
+					<div class="accent-divider"></div>
+					<h2>Crafting Stories Frame by Frame</h2>
+					<p>Professional Video Editor specializing in high-retention short-form content. I create cinematic edits for football, anime, movies, gaming, and creators, combining smooth transitions, dynamic pacing, and impactful sound design to keep audiences engaged from the first second to the last.</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Work Section -->
+		<section class="section work-section" id="work">
+			<div class="work-inner">
+				<div class="work-text reveal">
+					<span class="section-label">Portfolio</span>
+					<div class="accent-divider"></div>
+					<h2>What I Do</h2>
+					<p>I create professional video edits designed to capture attention and leave a lasting impact. Specializing in football, anime, movies, series, gaming, and cinematic content, I transform raw footage into visually compelling stories through smooth transitions, dynamic pacing, creative effects, color grading, and immersive sound design. Whether it's a 30-second reel or a full-length video, every project is crafted with precision, creativity, and attention to detail to ensure the highest quality.</p>
+				</div>
+				<div class="work-image-wrap reveal">
+					<img src="images/pic02.jpg" alt="Color graded cinematic footage" loading="lazy" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Edits Showcase -->
+		<section class="edits-section" id="edits-section">
+			<div class="edits-header reveal">
+				<span class="section-label">Showcase</span>
+				<h2 class="section-title">Selected Edits</h2>
+			</div>
+			<div class="edits-grid" id="edits-root">
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap">
+							<video preload="metadata" poster="images/thumb1.jpg" playsinline>
+								<source src="edits/edit1.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #1</h3>
+							<span>16:9 &bull; Landscape</span>
+						</div>
+					</div>
+				</div>
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap">
+							<video preload="metadata" poster="images/thumb2.jpg" playsinline>
+								<source src="edits/edit2.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #2</h3>
+							<span>16:9 &bull; Landscape</span>
+						</div>
+					</div>
+				</div>
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap square">
+							<video preload="metadata" poster="images/thumb3.jpg" playsinline>
+								<source src="edits/edit3.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #3</h3>
+							<span>1:1 &bull; Square</span>
+						</div>
+					</div>
+				</div>
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap">
+							<video preload="metadata" poster="images/thumb4.jpg" playsinline>
+								<source src="edits/edit4.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #4</h3>
+							<span>16:9 &bull; Landscape</span>
+						</div>
+					</div>
+				</div>
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap square">
+							<video preload="metadata" poster="images/thumb5.jpg" playsinline>
+								<source src="edits/edit5.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #5</h3>
+							<span>1:1 &bull; Square</span>
+						</div>
+					</div>
+				</div>
+				<div class="edit-card">
+					<div class="edit-card-inner">
+						<div class="edit-video-wrap">
+							<video preload="metadata" poster="images/thumb6.jpg" playsinline>
+								<source src="edits/edit6.mp4" type="video/mp4" />
+							</video>
+							<div class="edit-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+						</div>
+						<div class="edit-card-info">
+							<h3>Edit #6</h3>
+							<span>16:9 &bull; Landscape</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- About Section -->
+		<section class="about-section" id="about">
+			<div class="about-bg" aria-hidden="true">
+				<img class="about-bg-img" src="images/bg.jpg" alt="" loading="lazy" />
+				<div class="about-bg-overlay"></div>
+			</div>
+			<div class="about-inner reveal">
+				<span class="section-label">About Me</span>
+				<div class="accent-divider" style="margin-left:auto;margin-right:auto;"></div>
+				<h2>The Editor Behind Zangetsu</h2>
+				<p>Hi, I'm the editor behind Zangetsu Edits. I specialize in creating high-quality short-form and long-form videos that are designed to capture attention and tell compelling stories. From football highlights and anime edits to movies, gaming, and cinematic content, I focus on smooth transitions, creative storytelling, precise pacing, and immersive sound design. Every project is approached with attention to detail and a commitment to delivering content that exceeds expectations.</p>
+			</div>
+		</section>
+
+		<!-- Pricing Section -->
+		<section class="pricing-section" id="pricing-section">
+			<div class="pricing-inner">
+				<div class="reveal">
+					<span class="section-label">Pricing</span>
+					<h2 class="section-title">Simple, Transparent Plans</h2>
+				</div>
+				<div class="pricing-grid">
+					<!-- Starter -->
+					<div class="pricing-card">
+						<h3 class="plan-name">Starter</h3>
+						<div class="plan-price">₹199</div>
+						<p class="plan-description">Perfect for quick edits.</p>
+						<ul class="plan-features">
+							<li>Short video (up to 30 seconds)</li>
+							<li>Basic editing</li>
+							<li>Smooth transitions</li>
+							<li>HD Export</li>
+						</ul>
+						<a href="#contact" class="btn btn-outline" style="width:100%;justify-content:center;">Order Now</a>
+					</div>
+					<!-- Standard (Featured) -->
+					<div class="pricing-card featured">
+						<span class="featured-badge">Most Popular</span>
+						<h3 class="plan-name">Standard</h3>
+						<div class="plan-price">₹399</div>
+						<p class="plan-description">Great for creators and reels.</p>
+						<ul class="plan-features">
+							<li>Reel or Short (up to 60 seconds)</li>
+							<li>Professional editing</li>
+							<li>Cinematic transitions</li>
+							<li>Sound effects</li>
+							<li>HD Export</li>
+						</ul>
+						<a href="#contact" class="btn btn-primary" style="width:100%;justify-content:center;">Order Now</a>
+					</div>
+					<!-- Premium -->
+					<div class="pricing-card">
+						<h3 class="plan-name">Premium</h3>
+						<div class="plan-price">₹799</div>
+						<p class="plan-description">Best for high-quality content.</p>
+						<ul class="plan-features">
+							<li>Long-form video (up to 10 minutes)</li>
+							<li>Professional editing</li>
+							<li>Cinematic storytelling</li>
+							<li>Audio enhancement</li>
+							<li>HD Export</li>
+						</ul>
+						<a href="#contact" class="btn btn-outline" style="width:100%;justify-content:center;">Order Now</a>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Contact Section -->
+		<section class="contact-section" id="contact">
+			<div class="contact-inner reveal">
+				<span class="section-label">Get In Touch</span>
+				<div class="accent-divider"></div>
+				<h2>Let's Create Something Together</h2>
+				<p>Have a project in mind? Fill out the form below and I'll get back to you within 24 hours.</p>
+
+				<form method="POST" action="https://formspree.io/f/mvzjdked" class="contact-form" id="contact-form">
+					<div class="fields">
+						<div class="field half">
+							<label for="name">Name</label>
+							<input type="text" name="name" id="name" required placeholder="Your name" />
+						</div>
+						<div class="field half">
+							<label for="email">Email</label>
+							<input type="email" name="email" id="email" required placeholder="you@example.com" />
+						</div>
+						<div class="field full">
+							<label for="message">Message</label>
+							<textarea name="message" id="message" rows="5" required placeholder="Tell me about your project..."></textarea>
+						</div>
+					</div>
+					<div class="submit-row">
+						<button type="submit" class="primary-submit">Send Message</button>
+						<input type="reset" value="Reset" />
+					</div>
+				</form>
+
+				<div class="contact-success" id="contact-success" style="display:none; padding:1rem; background:rgba(255,90,61,.1); border-radius:8px; color:var(--c-accent); margin-top:1rem;">
+					Thanks! Your message has been received.
+				</div>
+
+				<div class="contact-social">
+					<ul class="icons">
+						<li><a href="https://instagram.com/Zangetsu_transitions" class="fab fa-instagram" target="_blank" rel="noopener noreferrer" aria-label="Instagram"></a></li>
+						<li><a href="https://github.com/Amartyakaware?utm_source=chatgpt.com" class="fab fa-github" target="_blank" rel="noopener noreferrer" aria-label="GitHub"></a></li>
+						<li><a href="https://discord.com/users/amartya_kaware" class="fab fa-discord" target="_blank" rel="noopener noreferrer" aria-label="Discord"></a></li>
+					</ul>
+				</div>
+			</div>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2026 <a href="https://www.instagram.com/Zangetsu_transitions">Zangetsu Edits</a>. Professional Video Editing.</p>
+		</footer>
+
+	</div><!-- /wrapper -->
+
+	<!-- Scripts -->
+	<script src="assets/js/jquery.min.js"></script>
+
+	<script>
+	/* ==============================================
+	   MAIN JAVASCRIPT — Three.js + GSAP + Lenis + Interactions
+	   ============================================== */
+	(function() {
+		'use strict';
+
+		// ---- Remove preload state ----
+		window.addEventListener('load', function() {
+			document.body.classList.remove('is-preload');
+		});
+
+		// ---- Lenis Smooth Scroll ----
+		var lenis;
+		try {
+			if (typeof Lenis !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				lenis = new Lenis({
+					duration: 1.2,
+					easing: function(t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+					smooth: true,
+					smoothTouch: false
+				});
+				function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+				requestAnimationFrame(raf);
+			}
+		} catch(e) { /* Lenis failed to load — proceed without */ }
+
+		// Lenis anchor clicks
+		document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+			link.addEventListener('click', function(e) {
+				var target = document.querySelector(this.getAttribute('href'));
+				if (target && lenis) {
+					e.preventDefault();
+					lenis.scrollTo(target);
+				}
+			});
+		});
+
+		// ---- Mobile Nav Toggle ----
+		var navToggle = document.querySelector('.nav-toggle');
+		var nav = document.querySelector('#header nav');
+		if (navToggle && nav) {
+			navToggle.addEventListener('click', function() {
+				var isOpen = nav.classList.toggle('open');
+				navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+			});
+			nav.querySelectorAll('a').forEach(function(a) {
+				a.addEventListener('click', function() {
+					nav.classList.remove('open');
+					navToggle.setAttribute('aria-expanded', 'false');
+				});
+			});
+		}
+
+		// ---- Header Scroll State ----
+		var header = document.getElementById('header');
+		window.addEventListener('scroll', function() {
+			if (header) header.classList.toggle('scrolled', window.scrollY > 80);
+		}, { passive: true });
+
+		// ---- Active Nav Link Update ----
+		var sections = document.querySelectorAll('section[id], article[id]');
+		var navLinks = document.querySelectorAll('#header nav a[href^="#"]');
+		function updateActiveNav() {
+			var scrollPos = window.scrollY + 200;
+			sections.forEach(function(sec) {
+				if (sec.offsetTop <= scrollPos && sec.offsetTop + sec.offsetHeight > scrollPos) {
+					var id = sec.getAttribute('id');
+					navLinks.forEach(function(l) {
+						l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+					});
+				}
+			});
+		}
+		window.addEventListener('scroll', updateActiveNav, { passive: true });
+		updateActiveNav();
+
+		// ---- Contact Form (Formspree) ----
+		var contactForm = document.getElementById('contact-form');
+		var contactSuccess = document.getElementById('contact-success');
+		if (contactForm) {
+			contactForm.addEventListener('submit', function(e) {
+				e.preventDefault();
+				var formData = new FormData(contactForm);
+				fetch(contactForm.action, {
+					method: 'POST',
+					body: formData,
+					headers: { 'Accept': 'application/json' }
+				}).then(function(response) {
+					if (response.ok) {
+						contactForm.style.display = 'none';
+						if (contactSuccess) contactSuccess.style.display = 'block';
+					} else {
+						response.json().then(function(data) {
+							if (data.errors) {
+								alert(data.errors.map(function(e){ return e.message; }).join(', '));
+							} else {
+								alert('Sorry, there was a problem submitting your form.');
+							}
+						});
+					}
+				}).catch(function() {
+					alert('Sorry, there was a problem submitting your form.');
+				});
+			});
+		}
+
+		// ---- Reveal on Scroll (IntersectionObserver) ----
+		var revealEls = document.querySelectorAll('.reveal');
+		if ('IntersectionObserver' in window) {
+			var revealObserver = new IntersectionObserver(function(entries) {
+				entries.forEach(function(entry) {
+					if (entry.isIntersecting) {
+						entry.target.classList.add('visible');
+						revealObserver.unobserve(entry.target);
+					}
+				});
+			}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+			revealEls.forEach(function(el) { revealObserver.observe(el); });
+		} else {
+			revealEls.forEach(function(el) { el.classList.add('visible'); });
+		}
+
+		if (typeof gsap === 'undefined') {
+			document.querySelectorAll('.edit-card, .pricing-card').forEach(function(el) { el.classList.add('visible'); });
+		}
+
+		// ---- GSAP Animations ----
+		if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+			gsap.registerPlugin(ScrollTrigger);
+
+			// Hero entrance
+			var heroTl = gsap.timeline({ delay: 0.3 });
+			heroTl.to('.hero-overline', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
+			      .to('.hero-title',      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5')
+			      .to('.hero-tagline',     { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5')
+			      .to('.hero-cta',         { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5');
+
+			// Parallax backgrounds
+			var bgImg = document.querySelector('.about-bg-img');
+			if (bgImg) {
+				gsap.to(bgImg, {
+					yPercent: 20,
+					ease: 'none',
+					scrollTrigger: {
+						trigger: '.about-section',
+						start: 'top bottom',
+						end: 'bottom top',
+						scrub: true
+					}
+				});
+			}
+
+			// Edit cards stagger
+			var editCards = document.querySelectorAll('.edit-card');
+			editCards.forEach(function(card, i) {
+				gsap.to(card, {
+					opacity: 1,
+					y: 0,
+					rotateX: 0,
+					duration: 0.7,
+					delay: i * 0.1,
+					ease: 'power3.out',
+					scrollTrigger: {
+						trigger: card,
+						start: 'top 85%',
+						toggleActions: 'play none none reverse'
+					}
+				});
+			});
+
+			// Pricing cards stagger
+			var priceCards = document.querySelectorAll('.pricing-card');
+			priceCards.forEach(function(card, i) {
+				var delay = card.classList.contains('featured') ? 0 : i * 0.12;
+				gsap.to(card, {
+					opacity: 1,
+					y: 0,
+					rotateY: 0,
+					duration: 0.7,
+					delay: delay,
+					ease: 'power3.out',
+					scrollTrigger: {
+						trigger: card,
+						start: 'top 85%',
+						toggleActions: 'play none none reverse'
+					}
+				});
+			});
+		}
+
+		// ---- Three.js Hero Scene ----
+		initThreeScene();
+
+		function initThreeScene() {
+			var canvas = document.getElementById('three-canvas');
+			if (!canvas || typeof THREE === 'undefined') return;
+
+			// Check WebGL support
+			try {
+				var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+			} catch(e) { return; }
+			if (!gl) return;
+
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera.position.z = 5;
+
+			var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+			// Lights
+			var ambientLight = new THREE.AmbientLight(0xf5ebdd, 0.15);
+			scene.add(ambientLight);
+			var pointLight = new THREE.PointLight(0xff5a3d, 0.8, 20);
+			pointLight.position.set(3, 3, 3);
+			scene.add(pointLight);
+			var pointLight2 = new THREE.PointLight(0x4a9eff, 0.4, 20);
+			pointLight2.position.set(-3, -2, 2);
+			scene.add(pointLight2);
+
+			// Floating geometries
+			var geometries = [];
+			var materialBase = new THREE.MeshPhysicalMaterial({
+				color: 0xf5ebdd,
+				metalness: 0.1,
+				roughness: 0.4,
+				transparent: true,
+				opacity: 0.12,
+				wireframe: false
+			});
+			var wireMat = new THREE.MeshBasicMaterial({
+				color: 0xff5a3d,
+				wireframe: true,
+				transparent: true,
+				opacity: 0.15
+			});
+
+			// Create floating shapes
+			var shapeConfigs = [
+				{ geo: new THREE.IcosahedronGeometry(0.8, 0), pos: [-2.5, 1.5, -1], speed: 0.3 },
+				{ geo: new THREE.OctahedronGeometry(0.6, 0), pos: [2.8, -1, -2], speed: 0.4 },
+				{ geo: new THREE.TorusGeometry(0.5, 0.2, 8, 16), pos: [-1.5, -2, -1.5], speed: 0.25 },
+				{ geo: new THREE.TetrahedronGeometry(0.7, 0), pos: [2, 2.2, -2.5], speed: 0.35 },
+				{ geo: new THREE.DodecahedronGeometry(0.5, 0), pos: [-3, -0.5, -3], speed: 0.2 },
+				{ geo: new THREE.BoxGeometry(0.6, 0.6, 0.6), pos: [0, 0, -2], speed: 0.45 }
+			];
+
+			shapeConfigs.forEach(function(cfg) {
+				// Solid mesh
+				var mesh = new THREE.Mesh(cfg.geo, materialBase.clone());
+				mesh.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+				mesh.userData = { rotSpeed: cfg.speed, floatOffset: Math.random() * Math.PI * 2 };
+				scene.add(mesh);
+				geometries.push(mesh);
+
+				// Wireframe overlay
+				var wireMesh = new THREE.Mesh(cfg.geo, wireMat.clone());
+				wireMesh.position.copy(mesh.position);
+				wireMesh.scale.multiplyScalar(1.3);
+				wireMesh.userData = { rotSpeed: cfg.speed * -0.7, floatOffset: cfg.floatOffset + 1 };
+				scene.add(wireMesh);
+				geometries.push(wireMesh);
+			});
+
+			// Particle field
+			var particleCount = 300;
+			var positions = new Float32Array(particleCount * 3);
+			for (var pi = 0; pi < particleCount * 3; pi += 3) {
+				positions[pi]     = (Math.random() - 0.5) * 20;
+				positions[pi + 1] = (Math.random() - 0.5) * 20;
+				positions[pi + 2] = (Math.random() - 0.5) * 10 - 3;
+			}
+			var particleGeo = new THREE.BufferGeometry();
+			particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+			var particleMat = new THREE.PointsMaterial({
+				color: 0xf5ebdd,
+				size: 0.03,
+				transparent: true,
+				opacity: 0.5
+			});
+			var particles = new THREE.Points(particleGeo, particleMat);
+			scene.add(particles);
+
+			// Mouse tracking
+			var mouseX = 0, mouseY = 0;
+			var targetMouseX = 0, targetMouseY = 0;
+			document.addEventListener('mousemove', function(e) {
+				targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+				targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+			});
+
+			// Scroll tracking
+			var scrollY = 0;
+			window.addEventListener('scroll', function() {
+				scrollY = window.scrollY;
+			}, { passive: true });
+
+			// Animation loop
+			var clock = new THREE.Clock();
+			var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+			function animate() {
+				requestAnimationFrame(animate);
+				if (prefersReducedMotion) return;
+
+				var elapsed = clock.getElapsedTime();
+
+				// Smooth mouse
+				mouseX += (targetMouseX - mouseX) * 0.05;
+				mouseY += (targetMouseY - mouseY) * 0.05;
+
+				// Rotate geometries
+				geometries.forEach(function(mesh) {
+					var ud = mesh.userData;
+					mesh.rotation.x += ud.rotSpeed * 0.01;
+					mesh.rotation.y += ud.rotSpeed * 0.008;
+					mesh.position.y += Math.sin(elapsed * ud.speed + ud.floatOffset) * 0.002;
+				});
+
+				// Camera follows mouse slightly
+				camera.position.x = mouseX * 0.3;
+				camera.position.y = -mouseY * 0.3;
+				camera.lookAt(0, 0, 0);
+
+				// Particles slow rotation
+				particles.rotation.y = elapsed * 0.02;
+				particles.rotation.x = elapsed * 0.01;
+
+				// Scroll-based fade
+				var heroProgress = Math.min(scrollY / window.innerHeight, 1);
+				var heroOpacity = 1 - heroProgress;
+				geometries.forEach(function(m) { m.material.opacity = heroOpacity * (m.material.opacity > 0.5 ? 0.12 : 0.15); });
+				particleMat.opacity = 0.5 * heroOpacity;
+
+				renderer.render(scene, camera);
+			}
+			animate();
+
+			// Resize
+			window.addEventListener('resize', function() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth, window.innerHeight);
+			});
+		}
+
+		// ---- 3D Tilt for Edit Cards ----
+		var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (!prefersReducedMotion && typeof THREE !== 'undefined') {
+			document.querySelectorAll('.edit-card').forEach(function(card) {
+				card.addEventListener('mousemove', function(e) {
+					var rect = card.getBoundingClientRect();
+					var x = (e.clientX - rect.left) / rect.width - 0.5;
+					var y = (e.clientY - rect.top) / rect.height - 0.5;
+					var inner = card.querySelector('.edit-card-inner');
+					if (inner) {
+						inner.style.transform = 'perspective(800px) rotateY(' + (x * 8) + 'deg) rotateX(' + (-y * 8) + 'deg)';
+					}
+				});
+				card.addEventListener('mouseleave', function() {
+					var inner = card.querySelector('.edit-card-inner');
+					if (inner) {
+						inner.style.transform = 'perspective(800px) rotateY(0) rotateX(0)';
+					}
+				});
+			});
+		}
+
+		// ---- 3D Tilt for Pricing Cards ----
+		if (!prefersReducedMotion) {
+			document.querySelectorAll('.pricing-card').forEach(function(card) {
+				card.addEventListener('mousemove', function(e) {
+					var rect = card.getBoundingClientRect();
+					var x = (e.clientX - rect.left) / rect.width - 0.5;
+					var y = (e.clientY - rect.top) / rect.height - 0.5;
+					card.style.transform = card.classList.contains('featured')
+						? 'translateY(-12px) scale(1.04) perspective(800px) rotateY(' + (x * 4) + 'deg) rotateX(' + (-y * 4) + 'deg)'
+						: 'translateY(-8px) scale(1.02) perspective(800px) rotateY(' + (x * 4) + 'deg) rotateX(' + (-y * 4) + 'deg)';
+				});
+				card.addEventListener('mouseleave', function() {
+					card.style.transform = card.classList.contains('featured')
+						? 'translateY(-12px) scale(1.04)'
+						: 'translateY(-8px) scale(1.02)';
+				});
+			});
+		}
+
+		// ---- Video Playback: hover plays with sound (muted until the page is clicked once) ----
+		if (!prefersReducedMotion) {
+			document.querySelectorAll('.edit-card').forEach(function(card) {
+				var video = card.querySelector('video');
+				var overlay = card.querySelector('.edit-play-overlay');
+				if (!video) return;
+
+				function showOverlay() { if (overlay) overlay.style.display = 'flex'; }
+				function hideOverlay() { if (overlay) overlay.style.display = 'none'; }
+
+				card.addEventListener('mouseenter', function() {
+					video.volume = 1;
+					video.muted = false;
+					var p = video.play();
+					if (p && p.catch) {
+						p.catch(function() {
+							// Sound not allowed yet (no click on the page so far): play muted
+							video.muted = true;
+							video.play().catch(function(){});
+						});
+					}
+					hideOverlay();
+				});
+
+				card.addEventListener('mouseleave', function() {
+					video.pause();
+					video.currentTime = 0;
+					showOverlay();
+				});
+
+				video.addEventListener('ended', function() {
+					video.pause();
+					video.currentTime = 0;
+					showOverlay();
+				});
+			});
+		}
+
+	})();
+	</script>
+
+</body>
+</html>
